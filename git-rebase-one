@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+set -e
+
+if [ $# -ne 1 ]; then
+  echo "Expecting one argument, the branch to rebase onto."
+  exit 1
+fi
+
+target_ref="$1"
+
+# Find merge base of current HEAD and target branch.
+merge_base=$(git merge-base HEAD ${target_ref})
+echo "Merge base is: $(git show --oneline --no-patch $merge_base)"
+
+num_commits=$(git rev-list --reverse $merge_base..master | wc -l)
+echo "${num_commits} commits to go"
+
+if [ $num_commits -eq 0 ]; then
+  echo "Up to date"
+  exit 1
+fi
+
+# Find first commit after merge base on the target branch.
+next_commit=$(git rev-list --reverse ${merge_base}..${target_ref} | head -n 1)
+echo "Next commit is: $(git show --oneline --no-patch $next_commit)"
+
+# Rebase on that commit.
+git rebase $next_commit
