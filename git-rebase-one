@@ -13,7 +13,7 @@ target_ref="$1"
 merge_base=$(git merge-base HEAD "${target_ref}")
 echo "Merge base is: $(git show --oneline --no-patch "${merge_base}")"
 
-num_commits=$(git rev-list --reverse "${merge_base}..master" | wc -l)
+num_commits=$(git rev-list --reverse "${merge_base}..${target_ref}" | wc -l)
 echo "${num_commits} commits to go"
 
 if [ "${num_commits}" -eq 0 ]; then
