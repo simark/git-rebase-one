@@ -2,12 +2,28 @@
 
 set -e
 
-if [ $# -ne 1 ]; then
-  echo "Expecting one argument, the branch to rebase onto."
+if [ $# -lt 1 ]; then
+  echo "Expecting at least one argument, the branch to rebase onto."
   exit 1
 fi
 
 target_ref="$1"
+shift
+
+n=1
+
+if [ $# -ge 1 ]; then
+  n=$1
+  shift
+fi
+
+
+if [ $# -ge 1 ]; then
+  echo "Unexpected extra arguments: $*"
+  exit 1
+fi
+
+echo "Using jumps of $n commit(s)"
 
 # Find merge base of current HEAD and target branch.
 merge_base=$(git merge-base HEAD "${target_ref}")
@@ -22,7 +38,7 @@ if [ "${num_commits}" -eq 0 ]; then
 fi
 
 # Find first commit after merge base on the target branch.
-next_commit=$(git rev-list --reverse "${merge_base}..${target_ref}" | head -n 1)
+next_commit=$(git rev-list --reverse "${merge_base}..${target_ref}" | head -n $n | tail -n 1)
 echo "Next commit is: $(git show --oneline --no-patch "${next_commit}")"
 
 # Rebase on that commit.
