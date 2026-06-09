@@ -80,6 +80,23 @@ Rebasing over one commit at a time can however be unnecessarily time and
 CPU-intensive.  `git-rebase-one` accepts an optional `N-COMMITS` parameter that
 indicates how many commits at a time to rebase over.
 
+`git-rebase-one` only follows the first-parent line of `TARGET-REF`.  This
+matters when `TARGET-REF` periodically merges another branch into itself.  For
+example, consider a `downstream` branch that tracks `master` and from time to
+time merges `master` into itself:
+
+        o---o---o---o---o---o---o---o  master
+         \       \           \
+          o-------M---o-------M---o  downstream
+           \
+            o---o---o my-branch
+
+When rebasing `my-branch` towards `downstream`, we step over `downstream`'s
+own commits and its merge commits (`M`), but not the individual `master`
+commits brought in by those merges.  Rebasing onto a merge commit incorporates
+everything that merge brought in as a single step, so you converge towards
+`downstream` without replaying each upstream `master` commit one by one.
+
 The helper script `converge.sh` (which is currently a bit rough, would need to
 be cleaned up) accelerates that by making a binary search, when encountering a
 conflict.  It starts by trying a rebase over 128 commits (an arbitrary number).

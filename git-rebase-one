@@ -36,7 +36,11 @@ echo "Using jumps of $n commit(s)"
 # Find merge base of current HEAD and target branch.
 merge_base=$(git merge-base HEAD "${target_ref}")
 
-num_commits=$(git rev-list --reverse "${merge_base}..${target_ref}" | wc -l)
+# Only walk the target branch's first-parent line.  When the target branch
+# periodically merges another branch, this steps over the target's own commits
+# and the merge commits, treating each merge as a single step rather than
+# descending into every merged-in commit.
+num_commits=$(git rev-list --first-parent --reverse "${merge_base}..${target_ref}" | wc -l)
 
 if [ "${num_commits}" -eq 0 ]; then
   echo "Up to date"
@@ -44,8 +48,8 @@ if [ "${num_commits}" -eq 0 ]; then
 fi
 
 # Find first commit after merge base on the target branch.
-first_commit=$(git rev-list --reverse "${merge_base}..${target_ref}" | head -n 1)
-next_commit=$(git rev-list --reverse "${merge_base}..${target_ref}" | head -n "$n" | tail -n 1)
+first_commit=$(git rev-list --first-parent --reverse "${merge_base}..${target_ref}" | head -n 1)
+next_commit=$(git rev-list --first-parent --reverse "${merge_base}..${target_ref}" | head -n "$n" | tail -n 1)
 
 section_break
 echo "Rebase step"
