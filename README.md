@@ -85,7 +85,11 @@ If a conflict occurs:
 
 When a conflict occurs, `git-rebase-one` prints a summary after the `git rebase`
 output showing the last upstream commit that rebased cleanly.  When rebasing one
-commit at a time, it also prints the exact upstream commit that conflicted.
+commit at a time, it also prints the exact upstream commit that conflicted.  If
+that conflicting commit is a merge commit, it additionally lists the commits
+that the merge brings in (those reachable from its non-first parents but not
+from its first parent), so you can see exactly which upstream changes the merge
+introduced.
 
 Rebasing over one commit at a time can however be unnecessarily time and
 CPU-intensive.  `git-rebase-one` accepts an optional `N-COMMITS` parameter that

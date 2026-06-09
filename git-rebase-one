@@ -10,6 +10,19 @@ print_commit() {
   git show --oneline --no-patch "$1"
 }
 
+# If the given commit is a merge, print the commits it brings in, i.e. those
+# reachable from its non-first parents but not from its first parent.  Returns
+# non-zero (without printing) if the commit is not a merge.
+print_merge_brings_in() {
+  local commit="$1"
+  local parents
+  parents=($(git rev-parse "${commit}^@"))
+  if [ "${#parents[@]}" -lt 2 ]; then
+    return 1
+  fi
+  git log --oneline "${parents[@]:1}" --not "${parents[0]}" | sed 's/^/    /'
+}
+
 # Sounds played on exit when the corresponding option is enabled.
 SOUND_DIR=/usr/share/sounds/freedesktop/stereo
 SUCCESS_SOUND="${SOUND_DIR}/complete.oga"
@@ -149,6 +162,10 @@ if ! git -c core.hooksPath=/dev/null rebase "${next_commit}"; then
   if [ "${first_commit}" = "${next_commit}" ]; then
     echo "  Conflicting upstream commit:"
     echo "    $(print_commit "${next_commit}")"
+    if brought_in=$(print_merge_brings_in "${next_commit}") && [ -n "${brought_in}" ]; then
+      echo "  This is a merge commit; it brings in the following commits:"
+      echo "${brought_in}"
+    fi
   else
     echo "  This rebase attempt covered upstream commits:"
     echo "    first: $(print_commit "${first_commit}")"
