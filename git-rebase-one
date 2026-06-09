@@ -10,6 +10,77 @@ print_commit() {
   git show --oneline --no-patch "$1"
 }
 
+# Sounds played on exit when the corresponding option is enabled.
+SOUND_DIR=/usr/share/sounds/freedesktop/stereo
+SUCCESS_SOUND="${SOUND_DIR}/complete.oga"
+FAILURE_SOUND="${SOUND_DIR}/dialog-error.oga"
+
+# Play a sound file, using whichever player is available.  Best-effort: never
+# fail the script because of audio.
+play_sound() {
+  local file="$1"
+  [ -r "${file}" ] || return 0
+  if command -v pw-play >/dev/null 2>&1; then
+    pw-play "${file}" >/dev/null 2>&1 || true
+  elif command -v paplay >/dev/null 2>&1; then
+    paplay "${file}" >/dev/null 2>&1 || true
+  elif command -v canberra-gtk-play >/dev/null 2>&1; then
+    canberra-gtk-play -f "${file}" >/dev/null 2>&1 || true
+  elif command -v ffplay >/dev/null 2>&1; then
+    ffplay -nodisp -autoexit -loglevel quiet "${file}" >/dev/null 2>&1 || true
+  fi
+}
+
+# Play the success/failure sound (if enabled) based on the exit status.  Exit
+# codes 0 (a step succeeded) and 12 (up to date) count as success; everything
+# else counts as failure.
+on_exit() {
+  local status=$?
+  case "${status}" in
+    0|12)
+      if [ "${play_success}" = 1 ]; then
+        play_sound "${SUCCESS_SOUND}"
+      fi
+      ;;
+    *)
+      if [ "${play_failure}" = 1 ]; then
+        play_sound "${FAILURE_SOUND}"
+      fi
+      ;;
+  esac
+}
+
+play_success=0
+play_failure=0
+positional=()
+
+# Separate optional flags from positional arguments.  Flags may appear in any
+# position.
+while [ $# -ge 1 ]; do
+  case "$1" in
+    --sound-success)
+      # Play a sound when the tool exits successfully.
+      play_success=1
+      ;;
+    --sound-failure)
+      # Play a sound when the tool exits with a failure (e.g. a conflict).
+      play_failure=1
+      ;;
+    -*)
+      echo "Unknown option: $1"
+      exit 11
+      ;;
+    *)
+      positional+=("$1")
+      ;;
+  esac
+  shift
+done
+
+set -- "${positional[@]}"
+
+trap on_exit EXIT
+
 if [ $# -lt 1 ]; then
   echo "Expecting at least one argument, the branch to rebase onto."
   exit 1

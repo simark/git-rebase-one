@@ -7,13 +7,24 @@ it is executable.
 Synopsis
 --------
 
-    git-rebase-one TARGET-REF [N-COMMITS]
+    git-rebase-one [OPTIONS] TARGET-REF [N-COMMITS]
 
 `TARGET-REF` is the commit ref to target (e.g. a branch name).  `N-COMMITS` is
 the number of commits to rebase onto.  `git-rebase-one` will rebase the current
 `HEAD` over `N-COMMITS` towards `TARGET-REF`.
 
 `git-rebase-one` can also be invoked as `git rebase-one`.
+
+Options:
+
+  - `--sound-success`: play a sound when the tool exits successfully (a step
+    completed, or the branch is up to date).
+  - `--sound-failure`: play a sound when the tool exits with a failure (e.g. a
+    conflict requiring manual intervention).
+
+The sounds come from `/usr/share/sounds/freedesktop/stereo/` and are played
+with whichever player is available (`pw-play`, `paplay`, `canberra-gtk-play` or
+`ffplay`); if none is available, the option is silently a no-op.
 
 Description
 -----------
