@@ -67,8 +67,10 @@ else
 fi
 section_break
 
-# Rebase on that commit.
-if ! git rebase "${next_commit}"; then
+# Rebase on that commit.  Disable git hooks (via an empty hooks path) so that
+# tools like pre-commit (https://pre-commit.com/) don't run while replaying
+# commits during the rebase.
+if ! git -c core.hooksPath=/dev/null rebase "${next_commit}"; then
   section_break
   echo "Manual intervention required"
   echo "  Last successful upstream commit:"
