@@ -72,6 +72,10 @@ If a conflict occurs:
 2. finish the aborted rebase operation with `git rebase --continue`
 3. resume using `git-rebase-one` to continue your journey towards a fully rebased branch
 
+When a conflict occurs, `git-rebase-one` prints a summary after the `git rebase`
+output showing the last upstream commit that rebased cleanly.  When rebasing one
+commit at a time, it also prints the exact upstream commit that conflicted.
+
 Rebasing over one commit at a time can however be unnecessarily time and
 CPU-intensive.  `git-rebase-one` accepts an optional `N-COMMITS` parameter that
 indicates how many commits at a time to rebase over.

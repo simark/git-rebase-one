@@ -19,17 +19,25 @@ BLUE='\033[34m'
 YELLOW='\033[33m'
 RESET='\033[0m'
 
+print_separator() {
+  printf '%b\n' "${BLUE}============================================================${RESET}"
+}
+
 echo -e "${BLUE}🎯 Converging towards $target_ref...${RESET}"
 
 while true; do
   iteration=$((iteration + 1))
-  echo -e "${BLUE}🔄 Iteration $iteration: attempting rebase with step size $steps${RESET}"
+  print_separator
+  echo -e "${BLUE}🔄 Iteration $iteration${RESET}"
+  echo -e "${BLUE}   Attempting rebase with step size $steps${RESET}"
+  print_separator
 
   res=0
   git-rebase-one "$target_ref" "$steps" || res=$?
 
   if [[ $res -eq 0 ]]; then
     consecutive_successes=$((consecutive_successes + 1))
+    print_separator
     echo -e "${GREEN}✅ Rebase succeeded (consecutive successes: $consecutive_successes)${RESET}"
 
     if [[ $consecutive_successes -ge 2 ]]; then
@@ -42,11 +50,13 @@ while true; do
   elif [[ $res -eq 13 ]]; then
     consecutive_successes=0
     if [[ $steps -gt 1 ]]; then
+      print_separator
       echo -e "${YELLOW}⚠️  Rebase failed, aborting and reducing step size...${RESET}"
       git rebase --abort
       steps=$((steps / 2))
       echo -e "${YELLOW}⏬ Reduced step size to $steps${RESET}"
     else
+      print_separator
       echo -e "${RED}❌ Rebase failed with step size 1. Manual intervention required.${RESET}"
       exit 1
     fi

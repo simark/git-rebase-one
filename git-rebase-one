@@ -2,6 +2,14 @@
 
 set -e
 
+section_break() {
+  printf '\n%s\n' "============================================================"
+}
+
+print_commit() {
+  git show --oneline --no-patch "$1"
+}
+
 if [ $# -lt 1 ]; then
   echo "Expecting at least one argument, the branch to rebase onto."
   exit 1
@@ -27,10 +35,8 @@ echo "Using jumps of $n commit(s)"
 
 # Find merge base of current HEAD and target branch.
 merge_base=$(git merge-base HEAD "${target_ref}")
-echo "Merge base is: $(git show --oneline --no-patch "${merge_base}")"
 
 num_commits=$(git rev-list --reverse "${merge_base}..${target_ref}" | wc -l)
-echo "${num_commits} commits to go"
 
 if [ "${num_commits}" -eq 0 ]; then
   echo "Up to date"
@@ -38,10 +44,40 @@ if [ "${num_commits}" -eq 0 ]; then
 fi
 
 # Find first commit after merge base on the target branch.
-next_commit=$(git rev-list --reverse "${merge_base}..${target_ref}" | head -n $n | tail -n 1)
-echo "Next commit is: $(git show --oneline --no-patch "${next_commit}")"
+first_commit=$(git rev-list --reverse "${merge_base}..${target_ref}" | head -n 1)
+next_commit=$(git rev-list --reverse "${merge_base}..${target_ref}" | head -n "$n" | tail -n 1)
+
+section_break
+echo "Rebase step"
+echo "  Remaining upstream commits: ${num_commits}"
+echo "  Requested step size: ${n}"
+echo "  Last successful upstream commit:"
+echo "    $(print_commit "${merge_base}")"
+if [ "${first_commit}" = "${next_commit}" ]; then
+  echo "  Rebasing against upstream commit:"
+  echo "    $(print_commit "${next_commit}")"
+else
+  echo "  Rebasing across upstream commits:"
+  echo "    first: $(print_commit "${first_commit}")"
+  echo "    last:  $(print_commit "${next_commit}")"
+fi
+section_break
 
 # Rebase on that commit.
 if ! git rebase "${next_commit}"; then
+  section_break
+  echo "Manual intervention required"
+  echo "  Last successful upstream commit:"
+  echo "    $(print_commit "${merge_base}")"
+  if [ "${first_commit}" = "${next_commit}" ]; then
+    echo "  Conflicting upstream commit:"
+    echo "    $(print_commit "${next_commit}")"
+  else
+    echo "  This rebase attempt covered upstream commits:"
+    echo "    first: $(print_commit "${first_commit}")"
+    echo "    last:  $(print_commit "${next_commit}")"
+    echo "  The exact conflicting upstream commit is within that range."
+  fi
+  section_break
   exit 13
 fi
